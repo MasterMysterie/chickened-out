@@ -8,7 +8,7 @@ public:
 	int age_days;
 	olc::vd2d position;
 	olc::vd2d destination;
-	bool male = false;
+	bool male;
 	bool fertile;
 	int still_counter;
 	double speed = 0;

@@ -12,7 +12,6 @@ Chicken::Chicken(olc::vi2d position, int birth_time) {
 	age_days = 0;
 	this->position = position;
 	this->birth_time = birth_time;
-	fertile = true;
 	adult = false;
 	still_counter = 0;
 
@@ -20,7 +19,7 @@ Chicken::Chicken(olc::vi2d position, int birth_time) {
 	//at destination
 	//still_counter = rand() % 21;
 
-	destination = olc::vi2d(rand() % 1001, rand() % 1001);
+	destination = olc::vi2d(rand() % 1000, rand() % 1000);
 
 	speed = rand() % 100 + 30;
 	if (! adult) {
@@ -39,7 +38,7 @@ void Chicken::walk(float fElapsedTime) {
 			//at destination
 			still_counter = rand() % 1000 + 100;
 
-			destination = olc::vi2d(rand() % 1001, rand() % 1001);
+			destination = olc::vi2d(rand() % 1000, rand() % 1000);
 			speed = rand() % 100 + 30;
 			if (! adult) {
 				speed *= 2;

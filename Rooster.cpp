@@ -10,8 +10,16 @@ Rooster::Rooster(olc::vi2d position, int birth_time) : Chicken(position, birth_t
 
 }
 
-ChickenStats Rooster::update(ChickenStats stats) {
+ChickenStats Rooster::update(ChickenStats stats, int time) {
 
+	if (age_days > 5 && birth_time == time) {
+		adult = true;
+
+
+
+	}
+
+	
 
 	return stats;
 

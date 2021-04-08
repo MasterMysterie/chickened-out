@@ -13,11 +13,12 @@
 #include <cstdlib>
 #include <iostream>
 #include <ctime>
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 std::string to_igt(double, double);
 
-void updateChickens();
 
 
 class Window : public olc::PixelGameEngine
@@ -40,7 +41,7 @@ public:
 	int rooster_count = 0;
 	int egg_count = 0;
 	
-	double day_length = 2;
+	double day_length = 3;
 	double hour_length = day_length / 24;
 	double minute_length = hour_length / 60;
 
@@ -54,19 +55,22 @@ public:
 	// Might change to chimkin later
 
 	std::unique_ptr<olc::Sprite> eggSpr;
-	std::unique_ptr<olc::Sprite> chickenSpr;
+	std::unique_ptr<olc::Sprite> pulletSpr;
+	std::unique_ptr<olc::Sprite> cockerelSpr;
 	std::unique_ptr<olc::Sprite> henSpr;
 	std::unique_ptr<olc::Sprite> roosterSpr;
 
 	std::unique_ptr<olc::Decal> eggDec;
-	std::unique_ptr<olc::Decal> chickenDec;
+	std::unique_ptr<olc::Decal> pulletDec;
+	std::unique_ptr<olc::Decal> cockerelDec;
 	std::unique_ptr<olc::Decal> henDec;
 	std::unique_ptr<olc::Decal> roosterDec;
 
 	int sizeMult = 10;
 
 	olc::vi2d eggTrns = olc::vi2d(3.5 * sizeMult, 8 * sizeMult);
-	olc::vi2d chickenTrns = olc::vi2d(4 * sizeMult, 8 * sizeMult);
+	olc::vi2d pulletTrns = olc::vi2d(4 * sizeMult, 8 * sizeMult);
+	olc::vi2d cockerelTrns = olc::vi2d(4 * sizeMult, 9 * sizeMult);
 	olc::vi2d henTrns = olc::vi2d(7.5 * sizeMult, 15 * sizeMult);
 	olc::vi2d roosterTrns = olc::vi2d(8 * sizeMult, 16 * sizeMult);
 
@@ -76,17 +80,19 @@ public:
 		// Called once at the start, so create things here
 
 		eggSpr = std::make_unique<olc::Sprite>("sprites/Egg.png");
-		chickenSpr = std::make_unique<olc::Sprite>("sprites/Chicken.png");
+		pulletSpr = std::make_unique<olc::Sprite>("sprites/Pullet.png");
+		cockerelSpr = std::make_unique<olc::Sprite>("sprites/Cockerel.png");
 		henSpr = std::make_unique<olc::Sprite>("sprites/Hen.png");
 		roosterSpr = std::make_unique<olc::Sprite>("sprites/Rooster.png");
 		
 		eggDec = std::make_unique<olc::Decal>(eggSpr.get());
-		chickenDec = std::make_unique<olc::Decal>(chickenSpr.get());
+		pulletDec = std::make_unique<olc::Decal>(pulletSpr.get());
+		cockerelDec = std::make_unique<olc::Decal>(cockerelSpr.get());
 		henDec = std::make_unique<olc::Decal>(henSpr.get());
 		roosterDec = std::make_unique<olc::Decal>(roosterSpr.get());
 
-		chickens.push_back(new Hen(olc::vi2d(500, 500), 2));
-		
+		chickens.push_back(new Hen(olc::vi2d(rand() % 1000, rand() % 1000), 0));
+		chickens[0]->adult = true;
 
 		return true;
 	}
@@ -99,7 +105,8 @@ public:
 		time += fElapsedTime;
 		
 		//DrawDecal(olc::vi2d(0, 500), eggDec.get(), olc::vf2d(10, 10));
-		//DrawDecal(olc::vi2d(250, 500), chickenDec.get(), olc::vf2d(10, 10));
+		//DrawDecal(olc::vi2d(250, 500), pulletDec.get(), olc::vf2d(10, 10));
+		//DrawDecal(olc::vi2d(x, y), cockerelDec.get(), olc::vf2d(10, 10));
 		//DrawDecal(olc::vi2d(500, 500), henDec.get(), olc::vf2d(10, 10));
 		//DrawDecal(olc::vi2d(750, 500), roosterDec.get(), olc::vf2d(10,10));
 
@@ -182,7 +189,6 @@ public:
 
 		for (int i = 0; i < eggs.size(); i++) {
 			
-			
 
 			if (day_switch) {
 
@@ -190,18 +196,30 @@ public:
 
 			}
 
-			EggStats stats = EggStats();
+			if (eggs[i]->fertile) {
 
-			stats = eggs[i]->update(stats, hour_time);
+				EggStats stats = EggStats();
 
-			if (stats.hatching) {
-				chickens.push_back(new Hen(eggs[i]->position, hour_time));
-				//eggs[i]->position              ^^
-				delete eggs[i];
-				eggs.erase(std::remove(eggs.begin(), eggs.end(), eggs[i]));
-				
+				stats = eggs[i]->update(stats, hour_time);
+
+				if (stats.hatching) {
+					if (rand() % 2 == 0) {
+						chickens.push_back(new Hen(eggs[i]->position, hour_time));
+						//eggs[i]->position              ^^
+					}
+					else {
+						chickens.push_back(new Rooster(eggs[i]->position, hour_time));
+
+					}
+					
+					delete eggs[i];
+					eggs.erase(std::remove(eggs.begin(), eggs.end(), eggs[i]));
+
+
+				}
 
 			}
+			
 
 		}
 	}
@@ -222,17 +240,26 @@ public:
 
 
 			}
-			if (! chickens[i]->adult) {
+			if (! chickens[i]->adult && ! chickens[i]->male) {
+				//pullet
 				chicken_count++;
-				DrawDecal(olc::vi2d(chickens[i]->position.x - chickenTrns.x * flip, chickens[i]->position.y - chickenTrns.y), chickenDec.get(), olc::vf2d(10 * flip, 10));
+				DrawDecal(olc::vi2d(chickens[i]->position.x - pulletTrns.x * flip, chickens[i]->position.y - pulletTrns.y), pulletDec.get(), olc::vf2d(10 * flip, 10));
+
+			}
+			else if (! chickens[i]->adult && chickens[i]->male) {
+				//cockerel
+				chicken_count++;
+				DrawDecal(olc::vi2d(chickens[i]->position.x - cockerelTrns.x * flip, chickens[i]->position.y - cockerelTrns.y), cockerelDec.get(), olc::vf2d(10 * flip, 10));
 
 			}
 			else if (chickens[i]->male) {
+				//rooster
 				rooster_count++;
 				DrawDecal(olc::vi2d(chickens[i]->position.x - roosterTrns.x * flip, chickens[i]->position.y - roosterTrns.y), roosterDec.get(), olc::vf2d(10 * flip, 10));
 
 			}
 			else {
+				//hen
 				hen_count++;
 				DrawDecal(olc::vi2d(chickens[i]->position.x - henTrns.x * flip, chickens[i]->position.y - henTrns.y), henDec.get(), olc::vf2d(10 * flip, 10));
 
@@ -286,7 +313,9 @@ public:
 int main()
 {
 
-	std::srand(std::time(nullptr));
+	srand(std::time(nullptr));
+
+	std::cout << std::time(nullptr) << "\n";
 
 	Window window;
 	if (window.Construct(1000, 1000, 1, 1))

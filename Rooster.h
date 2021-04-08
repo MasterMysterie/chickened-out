@@ -8,7 +8,7 @@ public:
 
 	Rooster(olc::vi2d, int);
 
-	ChickenStats update(ChickenStats);
+	ChickenStats update(ChickenStats, int);
 
 
 };

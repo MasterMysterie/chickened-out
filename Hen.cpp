@@ -6,7 +6,7 @@
 
 Hen::Hen(olc::vi2d position, int birth_time) : Chicken(position, birth_time){
 
-	this->fertile = fertile;
+	fertile = true;
 	this->birth_time = birth_time;
 	male = false;
 
