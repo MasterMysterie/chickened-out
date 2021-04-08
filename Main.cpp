@@ -130,7 +130,7 @@ public:
 		walkChickens(fElapsedTime);
 
 		DrawStringDecal({ 5, 5 }, "Time:", olc::WHITE, { 2, 2 });
-		DrawStringDecal({ 5, 25 }, "Chickens:", olc::WHITE, { 2, 2 });
+		DrawStringDecal({ 5, 25 }, "Chick:", olc::WHITE, { 2, 2 });
 		DrawStringDecal({ 5, 45 }, "Hens:", olc::WHITE, { 2, 2 });
 		DrawStringDecal({ 5, 65 }, "Roosters:", olc::WHITE, { 2, 2 });
 		DrawStringDecal({ 5, 85 }, "Eggs:", olc::WHITE, { 2, 2 });
@@ -216,19 +216,25 @@ public:
 
 	void drawChickens() {
 		for (int i = 0; i < chickens.size(); i++) {
+			double flip = 1;
+			if (chickens[i]->velocity.x < 0) {
+				flip = -1;
+
+
+			}
 			if (! chickens[i]->adult) {
 				chicken_count++;
-				DrawDecal(olc::vi2d(chickens[i]->position.x - henTrns.x, chickens[i]->position.y - chickenTrns.y), chickenDec.get(), olc::vf2d(10, 10));
+				DrawDecal(olc::vi2d(chickens[i]->position.x - chickenTrns.x * flip, chickens[i]->position.y - chickenTrns.y), chickenDec.get(), olc::vf2d(10 * flip, 10));
 
 			}
 			else if (chickens[i]->male) {
 				rooster_count++;
-				DrawDecal(olc::vi2d(chickens[i]->position.x - henTrns.x, chickens[i]->position.y - roosterTrns.y), roosterDec.get(), olc::vf2d(10, 10));
+				DrawDecal(olc::vi2d(chickens[i]->position.x - roosterTrns.x * flip, chickens[i]->position.y - roosterTrns.y), roosterDec.get(), olc::vf2d(10 * flip, 10));
 
 			}
 			else {
 				hen_count++;
-				DrawDecal(olc::vi2d(chickens[i]->position.x - henTrns.x, chickens[i]->position.y - henTrns.y), henDec.get(), olc::vf2d(10, 10));
+				DrawDecal(olc::vi2d(chickens[i]->position.x - henTrns.x * flip, chickens[i]->position.y - henTrns.y), henDec.get(), olc::vf2d(10 * flip, 10));
 
 			}
 			
