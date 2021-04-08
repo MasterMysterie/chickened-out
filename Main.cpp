@@ -313,7 +313,7 @@ public:
 int main()
 {
 
-	srand(std::time(nullptr));
+	std::srand(std::time(nullptr));
 
 	std::cout << std::time(nullptr) << "\n";
 
