@@ -7,6 +7,7 @@
 #include "ChickenStats.h"
 #include "Egg.h"
 #include "Player.h"
+#include "Button.h"
 
 #include <string>
 #include <vector>
@@ -48,9 +49,17 @@ public:
 	bool day_switch = false;
 	int day = 0;
 	int last_day = 0;
+	bool paused = false;
+
+	int selected_purchase = 0;
+	int* purchase_prices = new int[4];
+	
 
 	std::vector<Chicken*> chickens;
 	std::vector<Egg*> eggs;
+	std::vector<Button*> buttons;
+
+	Player player = Player(1000);
 
 	// Might change to chimkin later
 
@@ -59,12 +68,16 @@ public:
 	std::unique_ptr<olc::Sprite> cockerelSpr;
 	std::unique_ptr<olc::Sprite> henSpr;
 	std::unique_ptr<olc::Sprite> roosterSpr;
+	std::unique_ptr<olc::Sprite> buttonSpr;
+	std::unique_ptr<olc::Sprite> buttonPSpr;
 
 	std::unique_ptr<olc::Decal> eggDec;
 	std::unique_ptr<olc::Decal> pulletDec;
 	std::unique_ptr<olc::Decal> cockerelDec;
 	std::unique_ptr<olc::Decal> henDec;
 	std::unique_ptr<olc::Decal> roosterDec;
+	std::unique_ptr<olc::Decal> buttonDec;
+	std::unique_ptr<olc::Decal> buttonPDec;
 
 	int sizeMult = 10;
 
@@ -73,7 +86,7 @@ public:
 	olc::vi2d cockerelTrns = olc::vi2d(4 * sizeMult, 9 * sizeMult);
 	olc::vi2d henTrns = olc::vi2d(7.5 * sizeMult, 15 * sizeMult);
 	olc::vi2d roosterTrns = olc::vi2d(8 * sizeMult, 16 * sizeMult);
-
+	olc::vi2d buttonTrns = olc::vi2d(16 * sizeMult, 4 * sizeMult);
 
 	bool OnUserCreate() override
 	{
@@ -84,15 +97,28 @@ public:
 		cockerelSpr = std::make_unique<olc::Sprite>("sprites/Cockerel.png");
 		henSpr = std::make_unique<olc::Sprite>("sprites/Hen.png");
 		roosterSpr = std::make_unique<olc::Sprite>("sprites/Rooster.png");
+		buttonSpr = std::make_unique<olc::Sprite>("sprites/Button.png");
+		buttonPSpr = std::make_unique<olc::Sprite>("sprites/ButtonPressed.png");
 		
 		eggDec = std::make_unique<olc::Decal>(eggSpr.get());
 		pulletDec = std::make_unique<olc::Decal>(pulletSpr.get());
 		cockerelDec = std::make_unique<olc::Decal>(cockerelSpr.get());
 		henDec = std::make_unique<olc::Decal>(henSpr.get());
 		roosterDec = std::make_unique<olc::Decal>(roosterSpr.get());
+		buttonDec = std::make_unique<olc::Decal>(buttonSpr.get());
+		buttonPDec = std::make_unique<olc::Decal>(buttonPSpr.get());
 
-		chickens.push_back(new Hen(olc::vi2d(rand() % 1000, rand() % 1000), 0));
-		chickens[0]->adult = true;
+		//chickens.push_back(new Hen(olc::vi2d(rand() % 1000, rand() % 1000), 0));
+		//chickens[0]->adult = true;
+
+		purchase_prices[0] = 100;
+		purchase_prices[1] = 150;
+		purchase_prices[2] = 50;
+		purchase_prices[3] = 5000;
+
+		buttons.push_back(new Button(olc::vi2d(800, 60), olc::vi2d(32, 8), 2, "Buy 1 Egg\n\n"));
+		buttons.push_back(new Button(olc::vi2d(800, 160), olc::vi2d(32, 8), 0, "Buy 1 Hen\n\n"));
+		buttons.push_back(new Button(olc::vi2d(800, 260), olc::vi2d(32, 8), 1, "Buy 1 Rooster\n\n"));
 
 		return true;
 	}
@@ -102,13 +128,16 @@ public:
 		// called once per frame
 		Clear(olc::VERY_DARK_GREEN);
 
-		time += fElapsedTime;
-		
+		if (!paused) {
+			time += fElapsedTime;
+		}
+
 		//DrawDecal(olc::vi2d(0, 500), eggDec.get(), olc::vf2d(10, 10));
 		//DrawDecal(olc::vi2d(250, 500), pulletDec.get(), olc::vf2d(10, 10));
 		//DrawDecal(olc::vi2d(x, y), cockerelDec.get(), olc::vf2d(10, 10));
 		//DrawDecal(olc::vi2d(500, 500), henDec.get(), olc::vf2d(10, 10));
 		//DrawDecal(olc::vi2d(750, 500), roosterDec.get(), olc::vf2d(10,10));
+		//DrawDecal(olc::vi2d(x,y), buttonDec.get(), olc::vf2d(10, 10));
 
 		day = (int)(time / day_length);
 
@@ -116,6 +145,8 @@ public:
 		chicken_count = 0;
 		hen_count = 0;
 		rooster_count = 0;
+
+		checkInput();
 
 		if (last_day < day) {
 			day_switch = true;
@@ -128,13 +159,19 @@ public:
 			updateEggs();
 			day_switch = false;
 			last_time = time;
+
 			
 		}
 
 		drawEggs();
 		drawChickens();
+		drawButtons();
 		
-		walkChickens(fElapsedTime);
+		if (! paused) {
+			walkChickens(fElapsedTime);
+
+		}
+		
 
 		DrawStringDecal({ 5, 5 }, "Time:", olc::WHITE, { 2, 2 });
 		DrawStringDecal({ 5, 25 }, "Chick:", olc::WHITE, { 2, 2 });
@@ -142,6 +179,7 @@ public:
 		DrawStringDecal({ 5, 65 }, "Roosters:", olc::WHITE, { 2, 2 });
 		DrawStringDecal({ 5, 85 }, "Eggs:", olc::WHITE, { 2, 2 });
 		DrawStringDecal({ 5, 105 }, "Day:", olc::WHITE, { 2, 2 });
+		DrawStringDecal({ 5, 125 }, "Balance:", olc::WHITE, { 2,2 });
 
 		DrawStringDecal({ 155, 5 }, to_igt(time, day_length), olc::WHITE, { 2, 2 });
 		DrawStringDecal({ 155, 25 }, std::to_string(chicken_count), olc::WHITE, { 2, 2 });
@@ -149,11 +187,149 @@ public:
 		DrawStringDecal({ 155, 65 }, std::to_string(rooster_count), olc::WHITE, { 2, 2 });
 		DrawStringDecal({ 155, 85 }, std::to_string(egg_count), olc::WHITE, { 2, 2 });
 		DrawStringDecal({ 155, 105 }, std::to_string(day), olc::WHITE, { 2,2 });
+		DrawStringDecal({ 155, 125 }, "$" + std::to_string(player.balance), olc::WHITE, { 2,2 });
 
 
 		last_day = day;
 				
 		return true;
+	}
+
+	void checkInput() {
+
+		int hour_time = fmod(time, day_length) / hour_length;
+		olc::vi2d mPos = olc::vi2d(GetMouseX(), GetMouseY());
+		int c_index = chickens.size();
+		int e_index = eggs.size();
+	
+
+		if (GetKey(olc::Key::K1).bPressed) {
+			selected_purchase = 0;
+
+		}
+		else if (GetKey(olc::Key::K2).bPressed) {
+
+			selected_purchase = 1;
+
+		}
+		else if (GetKey(olc::Key::K3).bPressed) {
+
+			selected_purchase = 2;
+
+		}
+		else if (GetKey(olc::Key::K4).bPressed) {
+
+			selected_purchase = 3;
+
+		}
+
+		if (GetKey(olc::Key::SPACE).bPressed) {
+
+			paused = ! paused;
+
+		}
+
+		//yes I know that the above is stupid but you come up with something better
+
+		if (GetMouse(0).bPressed) {
+			//pressing on shit
+
+			for (Button* button : buttons) {
+				if (GetMouseX() >= button->position.x - sizeMult * button->dimensions.x / 2 &&
+					GetMouseX() <= button->position.x + sizeMult * button->dimensions.x / 2 &&
+					GetMouseY() >= button->position.y - sizeMult * button->dimensions.y / 2 &&
+					GetMouseY() <= button->position.y + sizeMult * button->dimensions.y / 2) {
+
+					//dont you dare insult this code ^^
+
+					if (player.balance - purchase_prices[button->purchase] < 0) {
+						break;
+					}
+
+					player.balance -= purchase_prices[button->purchase];
+
+					switch (button->purchase) {
+
+					case 0:
+						//hen
+						chickens.push_back(new Hen(olc::vi2d(rand() % 1000, rand() % 1000), hour_time));
+						chickens[c_index]->age_days = 10;
+						chickens[c_index]->adult = true;
+
+						break;
+
+					case 1:
+						//rooster
+						chickens.push_back(new Rooster(olc::vi2d(rand() % 1000, rand() % 1000), hour_time));
+						chickens[c_index]->age_days = 10;
+						chickens[c_index]->adult = true;
+
+						break;
+
+					case 2:
+						//egg
+						eggs.push_back(new Egg(true, olc::vi2d(rand() % 1000, rand() % 1000), hour_time));
+						eggs[e_index]->age_days = 2;
+
+						break;
+
+					case 3:
+						//coop
+
+						break;
+
+					}
+
+					break;
+
+				}
+
+
+			}
+
+			
+
+
+
+		}
+
+
+
+
+	}
+
+	void drawButtons() {
+
+		for (Button* button : buttons) {
+			if (GetMouseX() >= button->position.x - sizeMult * button->dimensions.x / 2 &&
+				GetMouseX() <= button->position.x + sizeMult * button->dimensions.x / 2 &&
+				GetMouseY() >= button->position.y - sizeMult * button->dimensions.y / 2 &&
+				GetMouseY() <= button->position.y + sizeMult * button->dimensions.y / 2 &&
+				GetMouse(0).bHeld) {
+
+				//this code is fine alright so stop complaining ^^
+
+				DrawDecal(olc::vi2d(button->position) - buttonTrns, buttonPDec.get(), olc::vi2d(sizeMult, sizeMult));
+
+			}
+			else {
+				
+				DrawDecal(olc::vi2d(button->position) - buttonTrns, buttonDec.get(), olc::vi2d(sizeMult, sizeMult));
+
+			}
+
+			olc::Pixel colour = olc::WHITE;
+
+			//yes the british spelling of colour, deal with it
+
+			if (player.balance - purchase_prices[button->purchase] < 0) {
+				colour = olc::RED;
+			}
+
+			DrawStringDecal(button->position - GetTextSize(button->label), button->label, colour, { 2,2 });
+			DrawStringDecal(button->position - GetTextSize("\n\n$" + std::to_string(purchase_prices[button->purchase])), "\n\n$" + std::to_string(purchase_prices[button->purchase]), colour, { 2,2 });
+
+		}
 	}
 
 	void updateChickens() {

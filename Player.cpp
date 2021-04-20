@@ -1,14 +1,10 @@
+#include "Player.h"
 
 
-class Player {
-public:
+Player::Player(int balance) {
+	this->balance = balance;
 
-	int balance;
-
-	Player() {
-		balance = 0;
-	}
+}
 
 
 
-};
