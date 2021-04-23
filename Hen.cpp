@@ -18,7 +18,6 @@ ChickenStats Hen::update(ChickenStats stats, int time) {
 		adult = true;
 
 
-
 	}
 
 	if (adult) {

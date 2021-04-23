@@ -116,9 +116,13 @@ public:
 		purchase_prices[2] = 50;
 		purchase_prices[3] = 5000;
 
-		buttons.push_back(new Button(olc::vi2d(800, 60), olc::vi2d(32, 8), 2, "Buy 1 Egg\n\n"));
-		buttons.push_back(new Button(olc::vi2d(800, 160), olc::vi2d(32, 8), 0, "Buy 1 Hen\n\n"));
-		buttons.push_back(new Button(olc::vi2d(800, 260), olc::vi2d(32, 8), 1, "Buy 1 Rooster\n\n"));
+		buttons.push_back(new Button(olc::vi2d(800, 60), olc::vi2d(32, 8), 2, "Buy 1 Egg\n\n", true));
+		buttons.push_back(new Button(olc::vi2d(800, 160), olc::vi2d(32, 8), 0, "Buy 1 Hen\n\n", true));
+		buttons.push_back(new Button(olc::vi2d(800, 260), olc::vi2d(32, 8), 1, "Buy 1 Rooster\n\n", true));
+
+		buttons.push_back(new Button(olc::vi2d(800, 460), olc::vi2d(32, 8), 2, "Sell 1 Egg\n\n", false));
+		buttons.push_back(new Button(olc::vi2d(800, 560), olc::vi2d(32, 8), 0, "Sell 1 Hen\n\n", false));
+		buttons.push_back(new Button(olc::vi2d(800, 660), olc::vi2d(32, 8), 1, "Sell 1 Rooster\n\n", false));
 
 		return true;
 	}
@@ -242,43 +246,101 @@ public:
 
 					//dont you dare insult this code ^^
 
-					if (player.balance - purchase_prices[button->purchase] < 0) {
-						break;
+					
+					if (button->buy) {
+						if (player.balance - purchase_prices[button->purchase] < 0) {
+							break;
+						}
+
+						player.balance -= purchase_prices[button->purchase];
+
+						switch (button->purchase) {
+
+						case 0:
+							//hen
+							chickens.push_back(new Hen(olc::vi2d(rand() % 1000, rand() % 1000), hour_time));
+							chickens[c_index]->age_days = 10;
+							chickens[c_index]->adult = true;
+
+							break;
+
+						case 1:
+							//rooster
+							chickens.push_back(new Rooster(olc::vi2d(rand() % 1000, rand() % 1000), hour_time));
+							chickens[c_index]->age_days = 10;
+							chickens[c_index]->adult = true;
+
+							break;
+
+						case 2:
+							//egg
+							eggs.push_back(new Egg(true, olc::vi2d(rand() % 1000, rand() % 1000), hour_time));
+							eggs[e_index]->age_days = 2;
+
+							break;
+
+						case 3:
+							//coop
+
+							break;
+
+						}
+
 					}
+					else {
+						
 
-					player.balance -= purchase_prices[button->purchase];
+						std::vector<int> hens;
+						std::vector<int> roosters;
 
-					switch (button->purchase) {
+						for (int i = 0; i < chickens.size(); i++) {
+							if (chickens[i]->adult && chickens[i]->male) {
+								roosters.push_back(i);
+							}
+							else if (chickens[i]->adult && !chickens[i]->male) {
+								hens.push_back(i);
+							}
+							
 
-					case 0:
-						//hen
-						chickens.push_back(new Hen(olc::vi2d(rand() % 1000, rand() % 1000), hour_time));
-						chickens[c_index]->age_days = 10;
-						chickens[c_index]->adult = true;
+						}
 
-						break;
+						switch (button->purchase) {
 
-					case 1:
-						//rooster
-						chickens.push_back(new Rooster(olc::vi2d(rand() % 1000, rand() % 1000), hour_time));
-						chickens[c_index]->age_days = 10;
-						chickens[c_index]->adult = true;
+						case 0:
+							//hen
+							if (hens.size() > 0) {
+								player.balance += purchase_prices[button->purchase];
+								chickens.erase(chickens.begin() + hens[rand() % hens.size()]);
+							}
+							break;
 
-						break;
+						case 1:
+							//rooster
+							if (roosters.size() > 0) {
+								player.balance += purchase_prices[button->purchase];
+								chickens.erase(chickens.begin() + roosters[rand() % roosters.size()]);
+							}
+							break;
 
-					case 2:
-						//egg
-						eggs.push_back(new Egg(true, olc::vi2d(rand() % 1000, rand() % 1000), hour_time));
-						eggs[e_index]->age_days = 2;
+						case 2:
+							//egg
+							if (eggs.size() > 0) {
+								player.balance += purchase_prices[button->purchase];
+								eggs.erase(eggs.begin() + rand() % eggs.size());
+							}
+							break;
 
-						break;
+						case 3:
+							//coop
 
-					case 3:
-						//coop
+							break;
 
-						break;
+						}
 
 					}
+					
+
+					
 
 					break;
 
@@ -293,10 +355,18 @@ public:
 
 		}
 
+		else if (GetMouse(1).bPressed) {
+
+			//nothing to see here(yet) folks
+
+
+		}
+
 
 
 
 	}
+
 
 	void drawButtons() {
 
@@ -322,8 +392,13 @@ public:
 
 			//yes the british spelling of colour, deal with it
 
-			if (player.balance - purchase_prices[button->purchase] < 0) {
+			if (player.balance - purchase_prices[button->purchase] < 0 && button->buy) {
 				colour = olc::RED;
+			}
+
+			if (!button->buy) {
+				colour = olc::DARK_GREEN;
+
 			}
 
 			DrawStringDecal(button->position - GetTextSize(button->label), button->label, colour, { 2,2 });
